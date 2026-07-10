@@ -1,5 +1,5 @@
 from pathlib import Path
-from safety import truncate,is_dangerous
+from tools.safety import truncate,is_dangerous
 from rich.console import Console
 from rich.prompt import Confirm
 from utils.config import logger

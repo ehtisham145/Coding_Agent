@@ -15,7 +15,7 @@ logger = logging.getLogger("coding_agent")
 class Settings(BaseSettings):
     GROQ_API_KEY : str
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
-    AX_TOKENS_RESPONSE: int = 4096
+    MAX_TOKENS_RESPONSE: int = 4096
     MAX_TOOL_OUTPUT_CHARS: int = 4000  
 
 

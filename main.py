@@ -1,36 +1,51 @@
-import typer 
+# main.py
+import typer
 from rich.console import Console
-from utils.config import settings,logger,groq_client
-from prompts import SYSTEM_PROMPT
+from rich.markdown import Markdown
+from rich.panel import Panel
+
+from utils.config import settings, logger
+from agent import CodingAgent
 
 app = typer.Typer()
 console = Console()
 
-@app.command()
-def start_agent():
-    """Start the Autonomous Coding Agent."""
-    console.print("[bold green]✅ Agent is ready![/bold green]")
-    console.print(f"[cyan]Using model:[/cyan] {settings.GROQ_MODEL}")
-
-
 
 @app.command()
-def test_groq():
-    """Test basic connection to Groq API (no tool-calling yet)."""
-    try:
-        response = groq_client.chat.completions.create(
-        model=settings.GROQ_MODEL,
-        messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": "Say 'Connection successful' and nothing else."},
-            ],
-            max_tokens=50,
-        )
-        reply = response.choices[0].message.content
-        console.print(f"[bold green]Groq Response:[/bold green] {reply}")
-    except Exception as e:
-        logger.error(f"Groq API test failed: {e}")
-        console.print(f"[bold red]❌ Error:[/bold red] {e}")
+def chat():
+    """Start an interactive chat session with the Coding Agent."""
+    console.print(Panel.fit(
+        "[bold green]🤖 Autonomous Coding Agent[/bold green]\n"
+        f"[cyan]Model:[/cyan] {settings.GROQ_MODEL}\n"
+        "[dim]Type 'exit' or 'quit' to end the session.[/dim]",
+        border_style="green"
+    ))
+
+    agent = CodingAgent()
+
+    while True:
+        try:
+            user_input = console.input("\n[bold blue]You:[/bold blue] ")
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[yellow]Session ended.[/yellow]")
+            break
+
+        if user_input.strip().lower() in ("exit", "quit"):
+            console.print("[yellow]👋 Goodbye![/yellow]")
+            break
+
+        if not user_input.strip():
+            continue
+
+        try:
+            response = agent.run(user_input)
+        except Exception as e:
+            logger.error(f"Unexpected error in agent.run: {e}")
+            console.print(f"[bold red]❌ Unexpected error:[/bold red] {e}")
+            continue
+
+        console.print("\n[bold green]Agent:[/bold green]")
+        console.print(Markdown(response))
 
 
 if __name__ == "__main__":

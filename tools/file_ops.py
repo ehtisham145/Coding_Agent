@@ -3,7 +3,7 @@ from utils.config import settings,logger
 from rich.console import Console
 from rich.prompt import Confirm
 import tempfile
-from safety import truncate
+from tools.safety import truncate
 
 console = Console()
 
