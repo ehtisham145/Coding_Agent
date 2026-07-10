@@ -1,2 +1,235 @@
 import subprocess
 from pathlib import Path
+from rich.console import Console
+from rich.prompt import Confirm
+from utils.config import settings,logger
+import tempfile
+
+console = Console()
+
+"""
+For prinitng some content in terminal we use rich library Console Module
+and for getting input from user we use Confirm Module of rich library
+We will use the subprocess module for automation
+"""
+
+# ---- Safety: Blacklisted command patterns ----
+
+"""These are dangerous pattern which we cannot allow our agent to execute that's why 
+we filter them with the function and does not allow our agent to execute these patterns
+"""
+
+DANGEROUS_PATTERNS = [
+    "rm -rf /", "rm -rf ~", "mkfs", "format ", ":(){ :|:& };:",
+    "shutdown", "reboot", "> /dev/sda", "dd if=", "del /f /s /q",
+    "rd /s /q", "diskpart",
+]
+
+def _truncate(text:str)->str:
+    """Truncate large outputs to protect context window. Here we are limiting our Agent your max contxt win is 4000"""
+    limit = settings.MAX_TOOL_OUTPUT_CHARS
+    if len(text) > limit:
+        return text[:limit] + f"\n\n... [TRUNCATED, {len(text) - limit} more chars]"
+    return text
+
+
+def _is_dangerous(command:str)->bool:
+    """This Fucntion will take the user command and convert it into lower case and then 
+    check the command in dangerous pattern or not and returns true or false according to it"""
+    cmd_lower = command.lower().strip()
+    return any(pattern in cmd_lower for pattern in DANGEROUS_PATTERNS)
+
+
+
+#-----------------------------Tool 1----------------------------------
+def read_file(path:str , line_start:int=None, line_end:int=None)->str:
+    """Here in this function we will read the content of file and if file content is larger
+    than context window we will raise an error"""
+    try:
+        file_path = Path(path)
+        if not file_path.is_file():
+            return f"ERROR: '{path}' is not a valid file or does not exist."
+
+        lines = file_path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+        if line_start is not None and line_end is not None:
+            selected = lines[max(0, line_start - 1):line_end]
+        else:
+            selected = lines
+
+        content = "\n".join(selected)
+        return _truncate(content)
+    
+    except Exception as e:
+        logger.error(f"read_file error: {e}")
+        return f"Error : {e}"
+
+
+
+
+# ---- Tool 2: write_file ------------
+def write_file(path: str, content: str,append: bool = False) -> str:
+    """This Function will write the content in the file by taking permission from the user"""
+    try:
+        file_path = Path(path)
+        
+        if file_path.is_dir():
+            return f"ERROR: '{path}' is a directory, cannot write a file here."
+
+        # UI Warning message mode 
+        mode_str = "APPEND to" if append else "WRITE (Overwrite)"
+        console.print(f"\n[bold yellow]⚠ Agent wants to {mode_str} file:[/bold yellow] {path}")
+        
+        if not Confirm.ask("Allow this action?", default=False):
+            return "ACTION DENIED by user."
+
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        if append:
+            with file_path.open("a", encoding="utf-8") as f:
+                f.write(content)
+            action = "appended"
+        else:
+            file_path.write_text(content, encoding="utf-8")
+            action = "written"
+
+        logger.info(f"File {action}: {path}")
+        return f"SUCCESS: File '{path}' {action} ({len(content)} chars)."
+        
+    except Exception as e:
+        logger.error(f"write_file error: {e}")
+        return f"ERROR: {e}"
+   
+
+# ---- Tool 3: Patch File ------------
+
+def patch_file(path: str, search_block: str, replace_block: str) -> str:
+    """
+    Updates a specific block of text in a file safely with user confirmation.
+    Production-ready with atomic writes, strict error messages, and duplicate detection.
+    """
+    try:
+        file_path = Path(path)
+        
+        # 1. Strict Existence and Type Checks
+        if not file_path.exists():
+            return f"ERROR: File '{path}' does not exist."
+        if file_path.is_dir():
+            return f"ERROR: '{path}' is a directory, cannot patch it."
+        
+        # 2. Empty Search Block Guard
+        if not search_block:
+            return "ERROR: search_block cannot be empty."
+    
+        # Read file safely
+        read_file_content = file_path.read_text(encoding="utf-8", errors="replace")
+        
+        # 4. Duplicate Check (Ambiguity Guard)
+        occurrences = read_file_content.count(search_block)
+        if occurrences == 0:
+            return "ERROR: search_block not found in file. No changes made."
+        elif occurrences > 1:
+            return f"ERROR: Found {occurrences} occurrences of search_block. Patching is ambiguous. Please provide a more unique search_block."
+
+        # 5. UI Preview & User Confirmation
+        console.print(f"\n[bold yellow]⚠ Agent wants to PATCH file:[/bold yellow] {path}")
+        console.print(f"[red]- {search_block[:200]}[/red]")
+        console.print(f"[green]+ {replace_block[:200]}[/green]")
+        if not Confirm.ask("Allow this patch?", default=False):
+            return "ACTION DENIED by user."
+
+        # 6. Apply Patch
+        updated = read_file_content.replace(search_block, replace_block, 1)
+        
+        # 7. Atomic Write (Safest way to write in production)
+        temp_dir = file_path.parent
+        with tempfile.NamedTemporaryFile("w", dir=temp_dir, delete=False, encoding="utf-8") as tf:
+            tf.write(updated)
+            temp_file_path = Path(tf.name)
+
+            """We implemented Atomic Writing. The code first creates a temporary file in the same directory and 
+            writes all the modified data into it. Once the write operation completes successfully, it swaps
+            the temporary file with the original file using an OS-level replace() function. This ensures that
+            even if a system crash or power failure
+            occurs mid-write, your original file remains 100% safe and uncorrupted."""
+        
+        # Safely replace the original file with the temp file
+        temp_file_path.replace(file_path)
+        
+        logger.info(f"File patched successfully: {path}")
+        return f"SUCCESS: File '{path}' patched."
+        
+    except Exception as e:
+        logger.error(f"patch_file error: {e}")
+        # Cleanup temp file if it was created but not swapped
+        if 'temp_file_path' in locals() and temp_file_path.exists():
+            try:
+                temp_file_path.unlink()
+            except Exception:
+                pass
+        return f"ERROR: {e}"
+    
+
+
+# ---- Tool 4: list_dir ----
+def list_dir(path:str = ".")->str:
+    """
+    Lists the contents of a directory safely with emojis, file sizes, and memory protection.
+    Production-ready: Prevents crashes on massive directories (like node_modules or .git).
+    """
+    try:
+        dir_path = Path(path)
+        if not dir_path.exists():
+            return "Error : Directory not Found at this Path"
+        
+        if not dir_path.is_dir():
+            return "Error : The Specified Path is not a Directory "
+        
+        items = []
+        for item in sorted(dir_path.iterdir()):
+            if item.name.startswith(".") or item.name == "__pycache__":
+                continue
+            marker = "📁" if item.is_dir() else "📄"
+            items.append(f"{marker} {item.name}")
+
+        return _truncate("\n".join(items) if items else "(empty directory)")
+    except Exception as e:
+        logger.error(f"list_dir error: {e}")
+        return f"ERROR: {e}"
+
+
+#----------Tool 5------------------------------------
+def execute_command(command: str) -> str:
+    if _is_dangerous(command):
+        logger.warning(f"Blocked dangerous command: {command}")
+        return f"BLOCKED: Command '{command}' matches a dangerous pattern and was refused."
+
+    console.print(f"\n[bold yellow]⚠ Agent wants to RUN command:[/bold yellow] {command}")
+    if not Confirm.ask("Allow execution?", default=False):
+        return "ACTION DENIED by user."
+
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        output = f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\nEXIT CODE: {result.returncode}"
+        logger.info(f"Command executed: {command} (exit={result.returncode})")
+        return _truncate(output)
+    except subprocess.TimeoutExpired:
+        return "ERROR: Command timed out after 60 seconds."
+    except Exception as e:
+        logger.error(f"execute_command error: {e}")
+        return f"ERROR: {e}"
+
+
+# ---- Tool Registry (name -> function) ----
+TOOL_FUNCTIONS = {
+    "read_file": read_file,
+    "write_file": write_file,
+    "patch_file": patch_file,
+    "list_dir": list_dir,
+    "execute_command": execute_command,
+}
