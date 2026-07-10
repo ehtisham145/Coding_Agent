@@ -1,0 +1,6 @@
+groq==1.5.0
+typer==0.26.8
+rich==15.0.0
+pydantic==2.13.4
+python-dotenv==1.2.2
+pydantic_settings=2.14.2
