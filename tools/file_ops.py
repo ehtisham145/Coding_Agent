@@ -1,44 +1,18 @@
-import subprocess
 from pathlib import Path
+from utils.config import settings,logger
 from rich.console import Console
 from rich.prompt import Confirm
-from utils.config import settings,logger
 import tempfile
+from safety import truncate
 
 console = Console()
+
 
 """
 For prinitng some content in terminal we use rich library Console Module
 and for getting input from user we use Confirm Module of rich library
 We will use the subprocess module for automation
 """
-
-# ---- Safety: Blacklisted command patterns ----
-
-"""These are dangerous pattern which we cannot allow our agent to execute that's why 
-we filter them with the function and does not allow our agent to execute these patterns
-"""
-
-DANGEROUS_PATTERNS = [
-    "rm -rf /", "rm -rf ~", "mkfs", "format ", ":(){ :|:& };:",
-    "shutdown", "reboot", "> /dev/sda", "dd if=", "del /f /s /q",
-    "rd /s /q", "diskpart",
-]
-
-def _truncate(text:str)->str:
-    """Truncate large outputs to protect context window. Here we are limiting our Agent your max contxt win is 4000"""
-    limit = settings.MAX_TOOL_OUTPUT_CHARS
-    if len(text) > limit:
-        return text[:limit] + f"\n\n... [TRUNCATED, {len(text) - limit} more chars]"
-    return text
-
-
-def _is_dangerous(command:str)->bool:
-    """This Fucntion will take the user command and convert it into lower case and then 
-    check the command in dangerous pattern or not and returns true or false according to it"""
-    cmd_lower = command.lower().strip()
-    return any(pattern in cmd_lower for pattern in DANGEROUS_PATTERNS)
-
 
 
 #-----------------------------Tool 1----------------------------------
@@ -58,7 +32,7 @@ def read_file(path:str , line_start:int=None, line_end:int=None)->str:
             selected = lines
 
         content = "\n".join(selected)
-        return _truncate(content)
+        return truncate(content)
     
     except Exception as e:
         logger.error(f"read_file error: {e}")
@@ -168,68 +142,3 @@ def patch_file(path: str, search_block: str, replace_block: str) -> str:
                 pass
         return f"ERROR: {e}"
     
-
-
-# ---- Tool 4: list_dir ----
-def list_dir(path:str = ".")->str:
-    """
-    Lists the contents of a directory safely with emojis, file sizes, and memory protection.
-    Production-ready: Prevents crashes on massive directories (like node_modules or .git).
-    """
-    try:
-        dir_path = Path(path)
-        if not dir_path.exists():
-            return "Error : Directory not Found at this Path"
-        
-        if not dir_path.is_dir():
-            return "Error : The Specified Path is not a Directory "
-        
-        items = []
-        for item in sorted(dir_path.iterdir()):
-            if item.name.startswith(".") or item.name == "__pycache__":
-                continue
-            marker = "📁" if item.is_dir() else "📄"
-            items.append(f"{marker} {item.name}")
-
-        return _truncate("\n".join(items) if items else "(empty directory)")
-    except Exception as e:
-        logger.error(f"list_dir error: {e}")
-        return f"ERROR: {e}"
-
-
-#----------Tool 5------------------------------------
-def execute_command(command: str) -> str:
-    if _is_dangerous(command):
-        logger.warning(f"Blocked dangerous command: {command}")
-        return f"BLOCKED: Command '{command}' matches a dangerous pattern and was refused."
-
-    console.print(f"\n[bold yellow]⚠ Agent wants to RUN command:[/bold yellow] {command}")
-    if not Confirm.ask("Allow execution?", default=False):
-        return "ACTION DENIED by user."
-
-    try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        output = f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\nEXIT CODE: {result.returncode}"
-        logger.info(f"Command executed: {command} (exit={result.returncode})")
-        return _truncate(output)
-    except subprocess.TimeoutExpired:
-        return "ERROR: Command timed out after 60 seconds."
-    except Exception as e:
-        logger.error(f"execute_command error: {e}")
-        return f"ERROR: {e}"
-
-
-# ---- Tool Registry (name -> function) ----
-TOOL_FUNCTIONS = {
-    "read_file": read_file,
-    "write_file": write_file,
-    "patch_file": patch_file,
-    "list_dir": list_dir,
-    "execute_command": execute_command,
-}
