@@ -14,8 +14,8 @@ logger = logging.getLogger("coding_agent")
 class Settings(BaseSettings):
     OPENAI_API_KEY: str
     OPENAI_MODEL: str = "gpt-4o"
-    MAX_TOKENS_RESPONSE: int = 4096
-    MAX_TOOL_OUTPUT_CHARS: int = 4000
+    MAX_TOKENS_RESPONSE: int = 8096
+    MAX_TOOL_OUTPUT_CHARS: int = 8000
 
     class Config:
         env_file = ".env"
