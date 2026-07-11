@@ -4,8 +4,8 @@ from rich.console import Console
 from rich.text import Text
 from rich.panel import Panel
 
-from utils.config import settings, logger
-from agent import CodingAgent
+from code_agent.utils.config import settings, logger
+from code_agent.agent import CodingAgent
 
 app = typer.Typer(add_completion=False)
 console = Console()

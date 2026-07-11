@@ -1,8 +1,8 @@
 from pathlib import Path
-from tools.safety import truncate,is_dangerous
+from code_agent.tools.safety import truncate,is_dangerous
 from rich.console import Console
 from rich.prompt import Confirm
-from utils.config import logger
+from code_agent.utils.config import logger
 import subprocess
 
 console = Console()

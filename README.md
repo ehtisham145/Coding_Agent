@@ -1,6 +1,6 @@
 # 🤖 Autonomous Coding Agent
 
-A production-grade, CLI-based Autonomous Coding Agent that runs directly inside your terminal. Powered by OpenAI's GPT-4o with native tool-calling, it can read, write, and patch code, manage project directories, and execute shell commands — all through natural language, with built-in safety guardrails at every step.
+A production-grade, CLI-based Autonomous Coding Agent that runs directly inside your terminal — installable as a **global command**, so you can enable it in any project, anywhere on your machine. Powered by OpenAI's GPT-4o with native tool-calling, it can read, write, and patch code, manage project directories, and execute shell commands, all through natural language, with built-in safety guardrails at every step.
 
 ---
 
@@ -13,6 +13,7 @@ A production-grade, CLI-based Autonomous Coding Agent that runs directly inside 
 - **🎨 Rich Terminal UI** — Clean, interactive chat experience with syntax-highlighted Markdown rendering, spinners, and clear separation between the agent's reasoning, tool calls, and observations.
 - **📝 Multiline Prompt Support** — Paste large, detailed prompts safely using a `"""` wrapper without breaking terminal input handling.
 - **⚛️ Atomic File Writes** — `patch_file` uses atomic write operations (temp file + OS-level replace) to guarantee files are never left in a corrupted state, even on a crash.
+- **🌍 Global CLI Command** — Install once, then run `codeagent` from inside *any* project folder on your system.
 
 ---
 
@@ -32,19 +33,23 @@ A production-grade, CLI-based Autonomous Coding Agent that runs directly inside 
 
 ```
 Coding_Agent/
-├── main.py              # CLI entrypoint & interactive chat loop
-├── agent.py              # Core ReAct orchestration loop
-├── prompts.py             # System prompt definition
-├── requirements.txt        # Python dependencies
-├── .env                     # Environment variables (not committed)
-├── utils/
-│   └── config.py              # Settings, logging, and LLM client initialization
-└── tools/
-    ├── __init__.py              # Tool registry (TOOL_FUNCTIONS)
-    ├── file_ops.py                # read_file, write_file, patch_file, create_directory
-    ├── shell_ops.py                 # list_dir, execute_command
-    ├── safety.py                      # Truncation & dangerous-command detection
-    └── schemas.py                       # OpenAI-compatible tool JSON schemas
+├── pyproject.toml          # Package config — defines the `codeagent` command
+├── venv/                    # Virtual environment (kept outside the package)
+└── code_agent/                # The actual installable Python package
+    ├── __init__.py
+    ├── main.py                  # CLI entrypoint & interactive chat loop
+    ├── agent.py                  # Core ReAct orchestration loop
+    ├── prompts.py                  # System prompt definition
+    ├── requirements.txt
+    ├── utils/
+    │   ├── __init__.py
+    │   └── config.py                  # Settings, logging, and LLM client initialization
+    └── tools/
+        ├── __init__.py                  # Tool registry (TOOL_FUNCTIONS)
+        ├── file_ops.py                     # read_file, write_file, patch_file, create_directory
+        ├── shell_ops.py                       # list_dir, execute_command
+        ├── safety.py                            # Truncation & dangerous-command detection
+        └── schemas.py                              # OpenAI-compatible tool JSON schemas
 ```
 
 ---
@@ -62,56 +67,80 @@ Coding_Agent/
 
 ---
 
-## 🚀 Getting Started
+## 🚀 One-Time Setup (Install as a Global Command)
 
-### 1. Clone the repository
+You only need to do this **once**. After that, `codeagent` will be available from any folder on your system.
+
+### 1. Clone or download the project
 ```bash
 git clone <your-repo-url>
 cd Coding_Agent
 ```
 
-### 2. Create a virtual environment
-```bash
+### 2. Create and activate a virtual environment
+```powershell
 python -m venv venv
-venv\Scripts\activate     # Windows
-source venv/bin/activate  # macOS/Linux
+venv\Scripts\activate
 ```
 
-### 3. Install dependencies
-```bash
-pip install -r requirements.txt
+### 3. Install project dependencies
+```powershell
+pip install -r code_agent\requirements.txt
 ```
 
-### 4. Configure environment variables
-Create a `.env` file in the project root:
+### 4. Install the agent as a global, editable package
+Run this from the project root (where `pyproject.toml` lives):
+```powershell
+pip install -e .
+```
+
+> 💡 If you want `codeagent` available even outside this virtual environment (i.e. truly global, in any terminal), also run the same command using your **global Python's pip**, not the venv's:
+> ```powershell
+> deactivate
+> pip install -e .
+> ```
+
+### 5. Set up your global configuration (API key)
+Create a folder and `.env` file in your user profile directory:
+```powershell
+mkdir $env:USERPROFILE\.coding_agent
+notepad $env:USERPROFILE\.coding_agent\.env
+```
+Add the following inside it, then save:
 ```env
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_actual_openai_api_key_here
 OPENAI_MODEL=gpt-4o
-MAX_TOKENS_RESPONSE=4096
-MAX_TOOL_OUTPUT_CHARS=4000
 ```
 
-### 5. Run the agent
-```bash
-python main.py
-```
+That's it — setup is complete. ✅
 
 ---
 
-## 💬 Usage
+## 💬 How to Use It (Every Time After Setup)
 
-Once running, simply chat with the agent in plain English:
+No need to reinstall or reconfigure anything again. Just:
 
+### 1. Open a terminal in **any** project folder
+```powershell
+cd D:\Path\To\Any\Project
+```
+
+### 2. Run the agent
+```powershell
+codeagent
+```
+
+### 3. Start chatting in plain English
 ```
 You: list the files in this directory
 You: read main.py and explain what it does
 You: create a login page with HTML, CSS, and JS
 ```
 
+The agent will treat your **current folder** as the working directory — so all file reads, writes, and commands happen right there in that project.
+
 ### Pasting long or multi-line prompts
-
 Wrap your prompt in triple quotes to paste multi-line text safely:
-
 ```
 You: """
 Create a simple, professional frontend-only website with 5 pages...
@@ -119,7 +148,8 @@ Create a simple, professional frontend-only website with 5 pages...
 """
 ```
 
-Type `exit` or `quit` at any time to end the session.
+### Ending a session
+Type `exit` or `quit` at any time, or press `Ctrl+C`.
 
 ---
 
@@ -129,6 +159,17 @@ Type `exit` or `quit` at any time to end the session.
 - A blacklist blocks known dangerous command patterns before they ever reach the confirmation prompt.
 - A hard iteration cap prevents the agent from looping indefinitely on a single task.
 - All actions are logged for auditability.
+
+---
+
+## 🧯 Troubleshooting
+
+| Problem | Likely Cause | Fix |
+|---------|----------------|-----|
+| `codeagent` not recognized | Global Python's `Scripts` folder isn't in PATH, or install was only done inside the venv | Re-run `pip install -e .` using the global (non-venv) `pip` |
+| `ModuleNotFoundError: No module named 'code_agent...'` | `pyproject.toml`'s entry point doesn't match the actual folder name | Ensure `codeagent = "code_agent.main:app"` matches your package folder name exactly |
+| Confirmation prompts get skipped or misfire | Pasting a multi-line prompt without the `"""` wrapper | Always wrap multi-line input in `"""` on its own line, both start and end |
+| `Failed to Load Settings` on startup | Global `.env` file missing or misconfigured | Recheck `%USERPROFILE%\.coding_agent\.env` exists and has a valid `OPENAI_API_KEY` |
 
 ---
 
@@ -143,7 +184,7 @@ Type `exit` or `quit` at any time to end the session.
 
 ## 📄 License
 
-This project is open for personal and educational use.
+This project is open for personal and educational use. Add your preferred license here (MIT, Apache 2.0, etc.).
 
 ---
 

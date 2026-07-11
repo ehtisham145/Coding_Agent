@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 import logging
 from openai import OpenAI
+from pathlib import Path
 
 #----------Logging Setup--------------------
 logging.basicConfig(
@@ -18,7 +19,7 @@ class Settings(BaseSettings):
     MAX_TOOL_OUTPUT_CHARS: int = 8000
 
     class Config:
-        env_file = ".env"
+        env_file = Path.home() / ".coding_agent" / ".env"
 
 #----------------Initialize Settings--------------------------
 

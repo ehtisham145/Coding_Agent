@@ -7,9 +7,9 @@ from rich.tree import Tree
 from rich.syntax import Syntax
 from rich.markdown import Markdown
 
-from utils.config import settings, logger, llm_client
-from prompts import SYSTEM_PROMPT
-from tools import TOOLS_SCHEMA, TOOL_FUNCTIONS
+from code_agent.utils.config import settings, logger, llm_client
+from code_agent.prompts import SYSTEM_PROMPT
+from code_agent.tools import TOOLS_SCHEMA, TOOL_FUNCTIONS
 
 console = Console()
 

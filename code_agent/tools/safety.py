@@ -1,4 +1,4 @@
-from utils.config import settings
+from code_agent.utils.config import settings
 # ---- Safety: Blacklisted command patterns ----
 
 """These are dangerous pattern which we cannot allow our agent to execute that's why 

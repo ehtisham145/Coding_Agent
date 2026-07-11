@@ -1,9 +1,9 @@
 from pathlib import Path
-from utils.config import settings,logger
+from code_agent.utils.config import settings,logger
 from rich.console import Console
 from rich.prompt import Confirm
 import tempfile
-from tools.safety import truncate
+from code_agent.tools.safety import truncate
 
 console = Console()
 
