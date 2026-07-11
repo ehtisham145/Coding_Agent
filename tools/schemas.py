@@ -110,4 +110,22 @@ TOOLS_SCHEMA = [
             },
         },
     },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "create_directory",
+            "description": "Create a new directory (folder), including any necessary parent directories. Use this whenever a new folder needs to be created — NEVER simulate folder creation by writing an empty file.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Relative or absolute path of the directory to create."
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+    },
 ]

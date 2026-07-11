@@ -142,3 +142,17 @@ def patch_file(path: str, search_block: str, replace_block: str) -> str:
                 pass
         return f"ERROR: {e}"
     
+
+
+def create_directory(path: str) -> str:
+    """Creates a directory (and parent directories if needed)."""
+    try:
+        dir_path = Path(path)
+        if dir_path.exists() and dir_path.is_file():
+            return f"ERROR: '{path}' already exists as a file, not a directory."
+        dir_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Directory created: {path}")
+        return f"SUCCESS: Directory '{path}' created."
+    except Exception as e:
+        logger.error(f"create_directory error: {e}")
+        return f"ERROR: {e}"

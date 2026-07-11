@@ -5,7 +5,7 @@ from rich.markdown import Markdown
 from rich.spinner import Spinner
 from rich.live import Live
 
-from utils.config import settings, groq_client, logger
+from utils.config import settings, logger,llm_client
 from prompts import SYSTEM_PROMPT
 from tools import TOOL_FUNCTIONS, TOOLS_SCHEMA
 
@@ -20,10 +20,10 @@ class CodingAgent:
         ]
 
     def _call_groq(self):
-        """Send current history + tools to Groq and get a response."""
+        """Send current history + tools to Open AI and get a response."""
         try:
-            response = groq_client.chat.completions.create(
-                model=settings.GROQ_MODEL,
+            response = llm_client.chat.completions.create(
+                model=settings.OPENAI_MODEL,
                 messages=self.history,
                 tools=TOOLS_SCHEMA,
                 tool_choice="auto",
@@ -61,7 +61,7 @@ class CodingAgent:
         self.history.append({"role": "user", "content": user_input})
 
         # Safety cap: prevent infinite tool-calling loops
-        MAX_ITERATIONS = 10
+        MAX_ITERATIONS = 30
 
         for iteration in range(MAX_ITERATIONS):
             with console.status("[bold green]Agent is thinking...[/bold green]", spinner="dots"):

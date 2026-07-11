@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 import logging
-from groq import Groq
+from openai import OpenAI
 
 #----------Logging Setup--------------------
 logging.basicConfig(
@@ -11,20 +11,18 @@ logging.basicConfig(
 logger = logging.getLogger("coding_agent")
 
 
-
 class Settings(BaseSettings):
-    GROQ_API_KEY : str
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    OPENAI_API_KEY: str
+    OPENAI_MODEL: str = "gpt-4o"
     MAX_TOKENS_RESPONSE: int = 4096
-    MAX_TOOL_OUTPUT_CHARS: int = 4000  
-
+    MAX_TOOL_OUTPUT_CHARS: int = 4000
 
     class Config:
         env_file = ".env"
-    
-#----------------Initialize  Settings--------------------------
 
-try: 
+#----------------Initialize Settings--------------------------
+
+try:
     settings = Settings()
 
 except Exception as e:
@@ -32,11 +30,11 @@ except Exception as e:
     raise SystemExit(1)
 
 
+#----------------Initialize OpenAI Client--------------------------
 
-#----------------Initialize Groq Client--------------------------
-try: 
-    groq_client = Groq(api_key=settings.GROQ_API_KEY)
+try:
+    llm_client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 except Exception as e:
-    logger.critical(f"Failed to initialize Groq client: {e}")
+    logger.critical(f"Failed to initialize OpenAI client: {e}")
     raise SystemExit(1)
