@@ -1,23 +1,23 @@
-# 🤖 Autonomous Coding Agent
+#  Autonomous Coding Agent
 
 A production-grade, CLI-based Autonomous Coding Agent that runs directly inside your terminal — installable as a **global command**, so you can enable it in any project, anywhere on your machine. Powered by OpenAI's GPT-4o with native tool-calling, it can read, write, and patch code, manage project directories, and execute shell commands, all through natural language, with built-in safety guardrails at every step.
 
 ---
 
-## ✨ Features
+##  Features
 
-- **🧠 ReAct Execution Loop** — A strict Reason → Act → Observe loop for structured, reliable, step-by-step task completion.
-- **🔧 Native Tool-Calling** — Direct access to the local filesystem and terminal through a secure, well-defined set of tools.
-- **🛡️ Safety Guardrails** — Every file write, patch, and terminal command requires explicit user confirmation (`y/n`) before execution. Dangerous commands (e.g. `rm -rf /`, `mkfs`, `shutdown`) are automatically blocked.
-- **📦 Token Optimization** — Large file reads and terminal outputs are automatically truncated to protect the context window.
-- **🎨 Rich Terminal UI** — Clean, interactive chat experience with syntax-highlighted Markdown rendering, spinners, and clear separation between the agent's reasoning, tool calls, and observations.
-- **📝 Multiline Prompt Support** — Paste large, detailed prompts safely using a `"""` wrapper without breaking terminal input handling.
-- **⚛️ Atomic File Writes** — `patch_file` uses atomic write operations (temp file + OS-level replace) to guarantee files are never left in a corrupted state, even on a crash.
-- **🌍 Global CLI Command** — Install once, then run `codeagent` from inside *any* project folder on your system.
+- ** ReAct Execution Loop** — A strict Reason → Act → Observe loop for structured, reliable, step-by-step task completion.
+- ** Native Tool-Calling** — Direct access to the local filesystem and terminal through a secure, well-defined set of tools.
+- ** Safety Guardrails** — Every file write, patch, and terminal command requires explicit user confirmation (`y/n`) before execution. Dangerous commands (e.g. `rm -rf /`, `mkfs`, `shutdown`) are automatically blocked.
+- ** Token Optimization** — Large file reads and terminal outputs are automatically truncated to protect the context window.
+- ** Rich Terminal UI** — Clean, interactive chat experience with syntax-highlighted Markdown rendering, spinners, and clear separation between the agent's reasoning, tool calls, and observations.
+- ** Multiline Prompt Support** — Paste large, detailed prompts safely using a `"""` wrapper without breaking terminal input handling.
+- ** Atomic File Writes** — `patch_file` uses atomic write operations (temp file + OS-level replace) to guarantee files are never left in a corrupted state, even on a crash.
+- ** Global CLI Command** — Install once, then run `codeagent` from inside *any* project folder on your system.
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Component        | Technology              |
 |-------------------|--------------------------|
@@ -29,7 +29,7 @@ A production-grade, CLI-based Autonomous Coding Agent that runs directly inside 
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 Coding_Agent/
@@ -54,7 +54,7 @@ Coding_Agent/
 
 ---
 
-## 🧰 Available Tools
+##  Available Tools
 
 | Tool | Description |
 |------|--------------|
@@ -67,7 +67,7 @@ Coding_Agent/
 
 ---
 
-## 🚀 One-Time Setup (Install as a Global Command)
+##  One-Time Setup (Install as a Global Command)
 
 You only need to do this **once**. After that, `codeagent` will be available from any folder on your system.
 
@@ -94,7 +94,7 @@ Run this from the project root (where `pyproject.toml` lives):
 pip install -e .
 ```
 
-> 💡 If you want `codeagent` available even outside this virtual environment (i.e. truly global, in any terminal), also run the same command using your **global Python's pip**, not the venv's:
+>  If you want `codeagent` available even outside this virtual environment (i.e. truly global, in any terminal), also run the same command using your **global Python's pip**, not the venv's:
 > ```powershell
 > deactivate
 > pip install -e .
@@ -112,7 +112,7 @@ OPENAI_API_KEY=your_actual_openai_api_key_here
 OPENAI_MODEL=gpt-4o
 ```
 
-That's it — setup is complete. ✅
+That's it — setup is complete. 
 
 ---
 
@@ -153,7 +153,7 @@ Type `exit` or `quit` at any time, or press `Ctrl+C`.
 
 ---
 
-## 🔐 Safety by Design
+##  Safety by Design
 
 - Every destructive or state-changing action (writing files, patching files, running shell commands) **requires explicit user confirmation**.
 - A blacklist blocks known dangerous command patterns before they ever reach the confirmation prompt.
@@ -162,7 +162,7 @@ Type `exit` or `quit` at any time, or press `Ctrl+C`.
 
 ---
 
-## 🧯 Troubleshooting
+##  Troubleshooting
 
 | Problem | Likely Cause | Fix |
 |---------|----------------|-----|
@@ -173,7 +173,7 @@ Type `exit` or `quit` at any time, or press `Ctrl+C`.
 
 ---
 
-## 🗺️ Roadmap
+##  Roadmap
 
 - [ ] Git-aware context (auto-detect staged/modified files)
 - [ ] Support for multiple LLM providers (Groq, Anthropic, local models)
@@ -182,12 +182,10 @@ Type `exit` or `quit` at any time, or press `Ctrl+C`.
 
 ---
 
-## 📄 License
+##  License
 
 This project is open for personal and educational use. Add your preferred license here (MIT, Apache 2.0, etc.).
 
 ---
 
-## 🙋 Author
-
-Built as a hands-on deep dive into agentic AI systems — tool-calling architectures, context management, and the safety considerations of giving an LLM real access to a file system and terminal.
+## Developed By : Ehtisham Iftikhar
